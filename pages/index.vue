@@ -1,213 +1,137 @@
 <template>
-  <v-container class="justify-center mt-5">
-    <TabelaDados v-if="items.length > 0" @editItem="editItem" @abrirDialog="() => ativo = true" titulo="Eventos" :loading="loading" @deleteItem="deleteItem" :headers="headers" :items="items"></TabelaDados>
-    <h1 v-else> Sem items</h1>
+  <v-container class="justify-center mt-5" style="height: 100vh; overflow-y: auto;">
+    <v-file-input
+      v-model="imageFile"
+      accept="image/*"
+      label="Selecione uma imagem"
+      outlined
+      @change="previewImage"
+    />
+    <v-img
+      v-if="imagePreview"
+      :src="imagePreview"
+      alt="Preview da Imagem"
+      max-height="300"
+      class="mt-3"
+    />
+    <v-btn
+      class="mt-3"
+      color="primary"
+      :disabled="loading || !imageFile"
+      @click="uploadImage"
+    >
+      Enviar Imagem
+    </v-btn>
+    <v-progress-linear
+      v-if="loading"
+      indeterminate
+      color="blue"
+      class="mt-3"
+    />
+    <v-list v-if="history.length > 0" class="mt-5">
+      <v-list-subheader>Histórico de Envios</v-list-subheader>
+      <v-list-item
+        v-for="(entry, index) in history"
+        :key="index"
+        class="d-flex"
+      >
+        <v-img
+          :src="entry.image"
+          max-height="50"
+          max-width="50"
+          class="mr-3"
+        />
+        <v-list-item-content>
+          <v-list-item-title>{{ entry.label }}</v-list-item-title>
+          <v-list-item-subtitle>{{ entry.percentage }}%</v-list-item-subtitle>
+        </v-list-item-content>
+      </v-list-item>
+    </v-list>
+    <v-btn class="mt-3 ml-4" color="error" @click="clearHistory">
+      Limpar Histórico
+    </v-btn>
   </v-container>
-  <v-dialog
-      v-model="ativo"
-      max-width="500"
-    >
-    <v-card
-      height="600"
-      width="700"
-    >
-      <v-card-title>
-        <h1>
-          {{ tituloDialog }} um Evento
-        </h1>
-      </v-card-title>
-      <v-card-text>
-        <v-row>
-          <v-col>
-            <v-text-field
-              variant="outlined"
-              label="Id"
-              placeholder="Identificador"
-              disabled
-              v-model="atividade.id"
-            >
-
-            </v-text-field>
-          </v-col>
-          <v-col>
-            <v-text-field
-              variant="outlined"
-              label="Nome"
-              placeholder="Nome"
-              v-model="atividade.nome"
-            >
-            </v-text-field>
-          </v-col>
-        </v-row>
-        <v-row>
-          <v-col>
-            <v-text-field
-              variant="outlined"
-              label="dataInicio"
-              placeholder="dataInicio"
-              v-model="atividade.dataInicio"
-            >
-            </v-text-field>
-          </v-col>
-          <v-col>
-            <v-text-field
-              variant="outlined"
-              label="dataFim"
-              placeholder="dataFim"
-              v-model="atividade.dataFim"
-            >
-            </v-text-field>
-          </v-col>
-        </v-row>
-        <v-row>
-          <v-col>
-            <v-text-field
-              variant="outlined"
-              label="local"
-              placeholder="local"
-              v-model="atividade.local"
-            >
-            </v-text-field>
-          </v-col>
-          <v-col>
-            <v-autocomplete
-              :items="eventos"
-              item-title="nome"
-              item-value="id"
-              v-model="atividade.idEvento"
-            >
-            </v-autocomplete>
-          </v-col>
-        </v-row>
-      </v-card-text>
-      <v-card-actions>
-        <v-spacer></v-spacer>
-        <v-btn
-          color="green"
-          variant="outlined"
-          @click="persist"
-        >
-          Salvar
-        </v-btn>
-      </v-card-actions>
-    </v-card>
-    </v-dialog>
 </template>
+
 
 <script>
 export default {
-  data: () => {
+  data() {
     return {
-      dialog: false,
-      valor: 0,
-      ativo: false,
-      loading: true,
-      textoUsuario: null,
-      atividade: {
-        id: null,
-        nome: null,
-        dataInicio: null,
-        dataFim: null,
-        local: null,
-        idEvento: null
+      imageFile: null,
+      imagePreview: null,
+      results: [],
+      history: [], 
+      loading: false,
+      classes: {
+        0: "Healthy",
+        1: "Septoria",
+        2: "Stripe Rust",
       },
-      headers: [
-        {
-          title: 'Identificador',
-          key: 'id'
-        },
-        {
-          title: 'nome',
-          key: 'nome'
-        },
-        {
-          title: 'local',
-          key: 'local'
-        },
-        {
-          title: 'Data de Inicio',
-          key: 'dataInicio'
-        },
-        {
-          title: 'Actions',
-          key: 'actions',
-          sortable: false
-        },
-      ],
-      items: [],
-      eventos: [],
-    }
+    };
   },
-
-  async created(){
-    await this.getItems();
-    await this.getEventos()
+  created() {
+    this.loadHistory();
   },
-
-  computed: {
-    tituloDialog: function() {
-      return this.atividade.id ? 'Editar': 'Criar';
-    }
-  },
-
-  watch: {
-    ativo(valor) {
-      if (valor == false) {
-        this.resetAtividade()
-      }
-    }
-  },
-
   methods: {
-    resetAtividade() {
-      this.atividade = {
-        id: null,
-        nome: null,
-        dataInicio: null,
-        dataFim: null,
-        local: null,
-        idEvento: null
+    previewImage() {
+      if (this.imageFile) {
+        this.imagePreview = URL.createObjectURL(this.imageFile);
       }
-      this.ativo = false;
     },
+    async uploadImage() {
+      if (!this.imageFile) return;
 
-    async persist() {
-      if (this.atividade.id) {
-        const response = await this.$api.post(`/atividade/persist/${this.atividade.id}`, this.atividade);
-      } else {
-        const response = await this.$api.post('/atividade/persist', this.atividade);
+      this.loading = true;
+
+      const formData = new FormData();
+      formData.append("image", this.imageFile);
+
+      try {
+        const response = await this.$api.post("/predict", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+
+        const predictions = response.prediction[0];
+
+        this.results = predictions.map((probability, index) => ({
+          label: this.classes[index],
+          percentage: (probability * 100).toFixed(2),
+        }));
+
+        const predictedClass = response.predictedClass;
+        const result = {
+          label: this.classes[predictedClass],
+          percentage: (predictions[predictedClass] * 100).toFixed(2),
+          image: this.imagePreview,
+        };
+
+        this.history.unshift(result);
+        this.saveHistory();
+      } catch (error) {
+        alert(error.message);
+      } finally {
+        this.loading = false;
       }
-      this.resetAtividade()
-      await this.getItems();
     },
-
-    editItem(item) {
-      this.atividade = {
-        ...item
-      };
-      this.ativo = true;
-    },
-
-    async deleteItem(item) {
-      if (confirm(`Deseja deletar o registro com id ${item.id}`)) {
-        const response = await this.$api.post('/atividade/destroy'  );
-        if (response.type == 'error') {
-          alert(response.message);
-        }
+    saveHistory() {
+      if (import.meta.client) {
+        localStorage.setItem("uploadHistory", JSON.stringify(this.history));
       }
-      await this.getItems();
     },
-
-    async getEventos() {
-      const response = await this.$api.get('/evento');
-      this.eventos = response.data;
+    loadHistory() {
+      if (import.meta.client) {
+        this.history = JSON.parse(localStorage.getItem("uploadHistory")) || [];
+      }
     },
-
-    async getItems() {
-      const response = await this.$api.get('/atividade');
-      this.items = response.data;
-      this.loading = false;
-    }
-  }
-}
+    clearHistory() {
+      if (import.meta.client) {
+        localStorage.removeItem("uploadHistory");
+        this.history = [];
+        alert("Histórico limpo com sucesso!");
+      }
+    },
+  },
+};
 </script>
+
