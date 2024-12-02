@@ -18,6 +18,14 @@ export default defineNuxtPlugin(() => {
     return Promise.reject(error);
   });
 
+  api.interceptors.request.use((req) => {
+    if (process.client) {
+      const token = localStorage.getItem('token');
+      req.headers.Authorization = `Bearer ${token}`;
+    }
+    return req
+  })
+
   return {
     provide: {
       api: api

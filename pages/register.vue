@@ -3,13 +3,20 @@
     <v-row>
       <v-col cols="12" sm="8" md="4" class="mx-auto">
         <v-card>
-          <v-card-title class="text-h5">Login</v-card-title>
+          <v-card-title class="text-h5">Register</v-card-title>
           
-          <v-form v-model="valid" @submit.prevent="login">
+          <v-form v-model="valid" @submit.prevent="register">
             <v-text-field
               v-model="username"
-              label="Email"
+              label="Nome"
               :rules="[rules.required]"
+              outlined
+              dense
+            />
+            <v-text-field
+              v-model="email"
+              label="Email"
+              :rules="[rules.required, rules.email]"
               outlined
               dense
             />
@@ -21,8 +28,7 @@
               outlined
               dense
             />
-            <v-btn :disabled="!valid" type="submit" color="primary">Login</v-btn>
-            <v-btn class="ml-3" @click="router.push('/register')" color="warning"> Cadastro </v-btn>
+            <v-btn :disabled="!valid" type="submit" color="primary">Register</v-btn>
           </v-form>
         </v-card>
       </v-col>
@@ -32,8 +38,8 @@
 
 <script setup>
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
 import axios from 'axios'
+import { useRouter } from 'vue-router'
 
 definePageMeta({
   layout: 'admin'
@@ -42,24 +48,25 @@ definePageMeta({
 const router = useRouter()
 const valid = ref(false)
 const username = ref('')
+const email = ref('')
 const password = ref('')
 const rules = {
-  required: value => !!value || 'Obrigatório.',
+  required: value => !!value || 'Obrigatório',
+  email: value => /.+@.+\..+/.test(value) || 'Email Válido',
 }
 
-const login = async () => {
+const register = async () => {
   try {
-    const response = await axios.post('http://localhost:3333/auth/login', {
-      email: username.value,
+    const response = await axios.post('http://localhost:3333/auth/register', {
+      name: username.value,
+      email: email.value,
       password: password.value,
     })
 
-    const token = response.data.token
-    localStorage.setItem('token', token)  
-
-    router.push('/test')
+    alert('Deu Certo')
+    router.push('/')  
   } catch (error) {
-    alert('Login Falhou')
+    alert('Falhou')
   }
 }
 </script>

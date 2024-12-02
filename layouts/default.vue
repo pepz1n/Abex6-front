@@ -1,36 +1,55 @@
 <template>
   <v-card>
     <v-layout>
-      <v-navigation-drawer
-        expand-on-hover
-        rail
-        theme="dark"
-      >
-        <v-list>
-          <v-list-item
-            prepend-avatar="https://randomuser.me/api/portraits/women/85.jpg"
-            subtitle="sandra_a88@gmailcom"
-            title="Sandra Adams"
-          ></v-list-item>
-        </v-list>
-
-        <v-divider></v-divider>
-
-        <v-list density="compact" nav>
-          <v-list-item prepend-icon="mdi-home" to="/" title="Home" value="starred"></v-list-item>
-        </v-list>
-      </v-navigation-drawer>
       <v-main style="height: 100vh; background-color: black;" theme="dark">
+        <v-row class="mt-3 ml-4" align="center" justify="start">
+          <v-col>
+            <v-btn class="mt-3" color="white" disabled>
+              {{ userName }}
+            </v-btn>
+          </v-col>
+          
+          <v-col>
+            <v-btn class="mt-3 ml-4" color="error" @click="logout">
+              Logout
+            </v-btn>
+          </v-col>
+        </v-row>
 
-        <slot/>
-
+        <slot />
       </v-main>
     </v-layout>
   </v-card>
 </template>
 
 <script>
+import axios from 'axios';
+
 export default {
-  name: 'default'
-}
+  name: 'default',
+  data() {
+    return {
+      userName: '',
+    };
+  },
+  created() {
+    this.getUserName();
+  },
+  methods: {
+    async getUserName() {
+      try {
+        const response = await this.$api.get('/auth/decode-token');
+        this.userName = response.user_name;
+      } catch (error) {
+        console.error("Erro ao obter o nome do usuário:", error);
+      }
+    },
+
+    logout() {
+      localStorage.removeItem('token'); 
+
+      this.$router.push('/'); 
+    },
+  },
+};
 </script>
